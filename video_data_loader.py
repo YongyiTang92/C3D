@@ -10,11 +10,11 @@ from PIL import Image
 
 
 class ucf101_rgb_loader_3d(data.Dataset):
-    def __init__(self, data_dir, file_dir, image_size=(224, 224), frames_per_clip=8):
+    def __init__(self, data_dir, file_dir, image_size=(112, 112), frames_per_clip=8):
         self.data_dir = data_dir  # data_dir = /home/yongyi/ucf101_train/my_code/data
         self.file_dir = file_dir  # file_dir = /home/local/yongyi/...
         self.image_size = image_size
-        self.size_all = [256, 224, 192, 168]  # 4 different length for width and height following TSN.\
+        self.size_all = [128, 112, 96, 84]  # 4 different length for width and height following TSN.\
         self.frames_per_clip = frames_per_clip  # The number of segmentations for a video.
 
         with open(os.path.join(self.data_dir, 'train_name.pkl'), 'r') as f:
@@ -44,7 +44,7 @@ class ucf101_rgb_loader_3d(data.Dataset):
         width_rand = self.size_all[random.randint(0, 3)]
         height_rand = self.size_all[random.randint(0, 3)]
         crop_size = (height_rand, width_rand)
-        transform = trans.Compose([trans.Resize(256),
+        transform = trans.Compose([trans.Resize(128),
                                    trans.TenCrop(crop_size)])
         transform2 = trans.Compose([trans.Resize(self.image_size), trans.ToTensor()])
 
@@ -53,19 +53,18 @@ class ucf101_rgb_loader_3d(data.Dataset):
         img_tensor = torch.cat([transform2(transform(img_tmp)[random_crop_index]) for img_tmp in img_list], 0)
         target = target.squeeze()
 
-        return img, target  # img size: (frames_per_clip, 3, 224, 224); target size: (101)
+        return img, target  # img size: (frames_per_clip, 3, 112, 112); target size: (101)
 
     def __len__(self):
         return len(self.data_name_list)
 
 
 class ucf101_rgb_loader_3d_test(data.Dataset):
-    def __init__(self, data_dir, file_dir, data_type, image_size=(224, 224), frames_per_clip=8):
-        self.data_type = data_type
+    def __init__(self, data_dir, file_dir, frames_per_clip=8, image_size=(112, 112)):
         self.data_dir = data_dir  # data_dir = /home/yongyi/ucf101_train/my_code/data
         self.file_dir = file_dir  # file_dir = /home/local/yongyi/...
         self.image_size = image_size
-        self.size_all = [256, 224, 192, 168]  # 4 different length for width and height following TSN.\
+        self.size_all = [128, 112, 96, 84]  # 4 different length for width and height following TSN.\
         self.frames_per_clip = frames_per_clip  # The number of segmentations for a video.
 
         with open(os.path.join(self.data_dir, 'test_name.pkl'), 'r') as f:
@@ -74,7 +73,7 @@ class ucf101_rgb_loader_3d_test(data.Dataset):
             self.nFrame_list = pickle.load(f)
         with open(os.path.join(self.data_dir, 'test_label.pkl'), 'r') as f:
             self.label_list = pickle.load(f)
-        self.transform = trans.Compose([trans.Resize(256),
+        self.transform = trans.Compose([trans.Resize(128),
                                         trans.TenCrop(self.image_size),
                                         trans.Lambda(lambda crops:
                                                      torch.stack([trans.ToTensor()(trans.Resize(self.image_size)(crop)) for crop in crops]))])
@@ -93,20 +92,11 @@ class ucf101_rgb_loader_3d_test(data.Dataset):
             img = Image.open(img_dir).convert('RGB')  # convert to RGB
             img_list.append(img)
 
-        # Perform transform
-        # Scale jittering
-        width_rand = self.size_all[random.randint(0, 3)]
-        height_rand = self.size_all[random.randint(0, 3)]
-        crop_size = (height_rand, width_rand)
-        transform = trans.Compose([trans.Resize(256),
-                                   trans.TenCrop(crop_size)])
-        transform2 = trans.Compose([trans.Resize(self.image_size), trans.ToTensor()])
-
         # img_tensor = img_tensor[random_crop_index, :]
         img_tensor = torch.cat([self.transform(img_tmp) for img_tmp in img_list], 0)
         target = target.squeeze()
 
-        return img, target  # img size: (frames_per_clip, 10, 3, 224, 224); target size: (101)
+        return img, target  # img size: (frames_per_clip, 10, 3, 112, 112); target size: (101)
 
     def __len__(self):
         return len(self.data_name_list)

@@ -9,7 +9,7 @@ from logger import Logger
 import time
 from video_data_loader import ucf101_rgb_loader_basic_train, ucf101_rgb_loader_basic_test
 from video_data_loader import ucf101_flow_loader_basic_train, ucf101_flow_loader_basic_test
-from model import resnet18_basic
+from model import C3D_basic
 
 
 class solver(object):
@@ -25,7 +25,7 @@ class solver(object):
     def create_model(self, sampling=False):
         """Create translation model and initialize or load parameters in session."""
 
-        model = resnet18_basic(self.FLAGS, self.data_type)
+        model = C3D_basic(self.FLAGS, self.data_type)
 
         if not self.FLAGS.resume:
             print("Creating model with fresh parameters.")
@@ -43,11 +43,8 @@ class solver(object):
 
     def creat_data_loader(self):
         if self.data_type == 'rgb':
-            train_dataset = ucf101_rgb_loader_basic_train(self.FLAGS.data, self.FLAGS.rgb_file)
-            test_dataset = ucf101_rgb_loader_basic_test(self.FLAGS.data, self.FLAGS.rgb_file, test_segs=self.FLAGS.test_segs)
-        elif self.data_type == 'flow':
-            train_dataset = ucf101_flow_loader_basic_train(self.FLAGS.data, self.FLAGS.flow_file)
-            test_dataset = ucf101_flow_loader_basic_test(self.FLAGS.data, self.FLAGS.flow_file, test_segs=self.FLAGS.test_segs)
+            train_dataset = ucf101_rgb_loader_3d(self.FLAGS.data, self.FLAGS.rgb_file)
+            test_dataset = ucf101_rgb_loader_3d_test(self.FLAGS.data, self.FLAGS.rgb_file)
         else:
             raise('Error data type: ', self.data_type)
         self.train_loader = torch.utils.data.DataLoader(train_dataset,
