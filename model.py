@@ -30,7 +30,7 @@ class C3D_basic(object):
     def train_step(self, image_tensor, label_tensor, forward_only):
         """
         Inputs:
-            image_tensor: (batch_size, in_channel, 224, 224) # one TenCroped sample
+            image_tensor: (batch_size, in_channel, frames_per_clip, 112, 112) # one TenCroped sample
             label_tensor: (batch_size, 101)
             forward_only: True for train, False for evaluate
         Output:
@@ -60,7 +60,7 @@ class C3D_basic(object):
     def test_step(self, image_tensor, label_tensor):
         """
         Inputs:
-            image_tensor: (frames, 10, in_channel, 224, 224) # one TenCroped sample
+            image_tensor: (frames, 10, in_channel, frames_per_clip, 112, 112) # one TenCroped sample
             label_tensor: (frames, 10, 101)
         Output:
             Loss:
@@ -70,7 +70,7 @@ class C3D_basic(object):
         _, labels_index = torch.max(label_tensor[0:1, 0, :], 1)  # The label for a video must the same
         labels_index = labels_index.long()
         img_var, label_var = self.to_variable(image_tensor), self.to_variable(labels_index)
-        img_var = img_var.view(-1, img_var.size(2), img_var.size(3), img_var.size(4))
+        img_var = img_var.view(-1, img_var.size(2), img_var.size(3), img_var.size(4), img_var.size(5))
         predict_score = self.model(img_var)  # May OOM
         if self.FLAGS.pooling == 'max':
             predict_score_avg, _ = torch.max(predict_score, 0, keepdim=True)
