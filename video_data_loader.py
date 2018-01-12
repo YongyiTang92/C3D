@@ -50,22 +50,23 @@ class ucf101_rgb_loader_3d(data.Dataset):
 
         random_crop_index = random.randint(0, 9)
         # img_tensor = img_tensor[random_crop_index, :]
-        img_tensor = torch.cat([transform2(transform(img_tmp)[random_crop_index]) for img_tmp in img_list], 0)
+        img_tensor = torch.stack([transform2(transform(img_tmp)[random_crop_index]) for img_tmp in img_list])
         target = target.squeeze()
 
-        return img, target  # img size: (frames_per_clip, 3, 112, 112); target size: (101)
+        return img_tensor, target  # img size: (frames_per_clip, 3, 112, 112); target size: (101)
 
     def __len__(self):
         return len(self.data_name_list)
 
 
 class ucf101_rgb_loader_3d_test(data.Dataset):
-    def __init__(self, data_dir, file_dir, frames_per_clip=8, image_size=(112, 112)):
+    def __init__(self, data_dir, file_dir, frames_per_clip=8, image_size=(112, 112), test_segs=3):
         self.data_dir = data_dir  # data_dir = /home/yongyi/ucf101_train/my_code/data
         self.file_dir = file_dir  # file_dir = /home/local/yongyi/...
         self.image_size = image_size
         self.size_all = [128, 112, 96, 84]  # 4 different length for width and height following TSN.\
         self.frames_per_clip = frames_per_clip  # The number of segmentations for a video.
+        self.test_segs = test_segs
 
         with open(os.path.join(self.data_dir, 'test_name.pkl'), 'r') as f:
             self.data_name_list = pickle.load(f)
@@ -84,19 +85,55 @@ class ucf101_rgb_loader_3d_test(data.Dataset):
         target = torch.from_numpy(target)  # size: (1, 101) 101 classes for ucf101
         # One image example
         file_name = self.data_name_list[index]
+        # image_list = []
+        # num_seg = self.test_segs
+        # seg_len = int((self.nFrame_list[index] - self.frames_per_clip) / num_seg)
+        # for i in range(num_seg):
+        #     image_index = random.randint(1 + i * seg_len, (i + 1) * seg_len)
+        #     img_dir = os.path.join(self.file_dir, file_name, ('frame' + '%06d' % image_index + '.jpg'))
+        #     img = Image.open(img_dir).convert('RGB')
+        #     image_list.append(img)
 
-        image_index = random.randint(1, self.nFrame_list[index] - self.frames_per_clip)
-        img_list = []
-        for i in range(self.frames_per_clip):
-            img_dir = os.path.join(self.file_dir, file_name, ('frame' + '%06d' % (image_index + i) + '.jpg'))
-            img = Image.open(img_dir).convert('RGB')  # convert to RGB
-            img_list.append(img)
+        # image_index = random.randint(1, self.nFrame_list[index] - self.frames_per_clip)
+        # img_list = []
+        # for i in range(self.frames_per_clip):
+        #     img_dir = os.path.join(self.file_dir, file_name, ('frame' + '%06d' % (image_index + i) + '.jpg'))
+        #     img = Image.open(img_dir).convert('RGB')  # convert to RGB
+        #     img_list.append(img)
 
-        # img_tensor = img_tensor[random_crop_index, :]
-        img_tensor = torch.cat([self.transform(img_tmp) for img_tmp in img_list], 0)
-        target = target.squeeze()
+        # # img_tensor = img_tensor[random_crop_index, :]
+        # img_tensor = torch.stack([self.transform(img_tmp) for img_tmp in img_list])
+        # target = target.squeeze()
 
-        return img, target  # img size: (frames_per_clip, 10, 3, 112, 112); target size: (101)
+        # return img_tensor.transpose(0, 1), target  # img size: (frames_per_clip, 10, 3, 112, 112); target size: (101)
+
+        image_list = []
+        num_seg = self.test_segs
+        seg_len = int((self.nFrame_list[index] - self.frames_per_clip) / num_seg)
+        for i in range(num_seg):
+            image_index = random.randint(1 + i * seg_len, (i + 1) * seg_len)
+            img_temporal = []
+            for j in range(self.frames_per_clip):
+                img_dir = os.path.join(self.file_dir, 'u', file_name, ('frame' + '%06d' % (image_index + j) + '.jpg'))
+                img = Image.open(img_dir).convert('RGB')
+                img_temporal.append(img)
+            image_list.append(img_temporal)
+
+        # Perform transform
+        # Scale jittering
+        transform = self.transform
+
+        target = target.clone().repeat(10, 1)
+        imge_list_new = []
+        for i, img_temporal in enumerate(image_list):
+            img_tensor = torch.stack([transform(imgs) for imgs in img_temporal])  # (frames_per_clip, 10, 3, 224, 224)
+            imge_list_new.append(img_tensor)
+
+        img_tensor = torch.stack(imge_list_new)  # size (num_seg, frames_per_clip, 10, 3, 224, 224)
+        target = torch.stack([target for x in range(len(image_list))])  # size (num_seg, 10, 101)
+
+        # Return image and target
+        return img_tensor, target  # img size: (num_seg, 10, temporal_len*2, 224, 224); target size: (num_seg, 10, 101)
 
     def __len__(self):
         return len(self.data_name_list)
