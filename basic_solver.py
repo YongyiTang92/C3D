@@ -7,8 +7,7 @@ import numpy as np
 from utilities import save_checkpoint, read_checkpoint
 from logger import Logger
 import time
-from video_data_loader import ucf101_rgb_loader_basic_train, ucf101_rgb_loader_basic_test
-from video_data_loader import ucf101_flow_loader_basic_train, ucf101_flow_loader_basic_test
+from video_data_loader import ucf101_rgb_loader_3d, ucf101_rgb_loader_3d_test
 from model import C3D_basic
 
 
@@ -112,13 +111,10 @@ class solver(object):
 
             self.logger.scalar_summary('learning_rate', self.model.learning_rate, step + 1)
 
-            # Adjust Learning Rate
-            if (step + 1) == 100:  # Unfreeze the parameters
-                self.model.set_optimizer(self.model.learning_rate, 1.0)
             if (step + 1) % self.FLAGS.learning_rate_step == 0:
                 try:
                     self.model.learning_rate = self.model.learning_rate * lr_decay_list.pop()
-                    self.model.set_optimizer(self.model.learning_rate, 1.0)
+                    self.model.set_optimizer(self.model.learning_rate)
                 except Exception as e:
                     pass
 

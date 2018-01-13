@@ -1,6 +1,6 @@
 import numpy as np
 import torch
-from C3D_models import R3D_34
+from C3D_models import R3D_34, R21D_34
 import torch.nn as nn
 from torch.autograd import Variable
 
@@ -10,6 +10,8 @@ class C3D_basic(object):
         self.FLAGS = FLAGS
         if FLAGS.model == 'R3D_34':
             self.model = R3D_34()
+        elif FLAGS.model == 'R21D_34':
+            self.model = R21D_34()
         else:
             raise('Error model type: ', FLAGS.model)
 

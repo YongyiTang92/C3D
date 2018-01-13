@@ -3,7 +3,7 @@ import math
 import torch
 
 
-def conv3x3x3(in_planes, out_planes, stride=1, padding=1):
+def conv3x3x3(in_planes, out_planes, stride=1, padding=1, kernel_size=3):
     "3x3x3 convolution with padding"
     return nn.Conv3d(in_planes, out_planes, kernel_size=3, stride=stride,
                      padding=1, bias=False)
@@ -30,6 +30,44 @@ class C3D_BasicBlock(nn.Module):
         out = self.relu(out)
 
         out = self.conv2(out)
+        out = self.bn2(out)
+
+        if self.downsample is not None:
+            residual = self.downsample(x)
+
+        out += residual
+        out = self.relu(out)
+
+        return out
+
+
+class C21D_BasicBlock(nn.Module):
+    expansion = 1
+
+    def __init__(self, inplanes, planes, stride=1, downsample=None):
+        super(C3D_BasicBlock, self).__init__()
+        self.conv1 = conv3x3x3(inplanes, planes, (1, stride, stride), kernel_size=(1, 3, 3))
+        self.conv1_2 = conv3x3x3(inplanes, planes, (stride, 1, 1), kernel_size=(3, 1, 1))
+        self.bn1 = nn.BatchNorm3d(planes)
+        self.relu = nn.ReLU(inplace=True)
+        self.conv2 = conv3x3x3(planes, planes, kernel_size=(1, 3, 3))
+        self.conv2_2 = conv3x3x3(planes, planes, kernel_size=(3, 1, 1))
+        self.bn2 = nn.BatchNorm3d(planes)
+        self.downsample = downsample
+        self.stride = stride
+
+    def forward(self, x):
+        residual = x
+
+        out = self.conv1(x)
+        out = self.relu(out)
+        out = self.conv1_2(out)
+        out = self.bn1(out)
+        out = self.relu(out)
+
+        out = self.conv2(out)
+        out = self.relu(out)
+        out = self.conv2_2(out)
         out = self.bn2(out)
 
         if self.downsample is not None:
@@ -110,4 +148,13 @@ def R3D_34():
         pretrained (bool): If True, returns a model pre-trained on ImageNet
     """
     model = ResNet_3D(C3D_BasicBlock, [3, 4, 6, 3])
+    return model
+
+
+def R21D_34():
+    """Constructs a ResNet-50 model.
+    Args:
+        pretrained (bool): If True, returns a model pre-trained on ImageNet
+    """
+    model = ResNet_3D(C21D_BasicBlock, [3, 4, 6, 3])
     return model
