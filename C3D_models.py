@@ -45,30 +45,45 @@ class C21D_BasicBlock(nn.Module):
     expansion = 1
 
     def __init__(self, inplanes, planes, stride=1, downsample=None):
-        super(C3D_BasicBlock, self).__init__()
-        self.conv1 = conv3x3x3(inplanes, planes, (1, stride, stride), kernel_size=(1, 3, 3))
-        self.conv1_2 = conv3x3x3(inplanes, planes, (stride, 1, 1), kernel_size=(3, 1, 1))
-        self.bn1 = nn.BatchNorm3d(planes)
-        self.relu = nn.ReLU(inplace=True)
-        self.conv2 = conv3x3x3(planes, planes, kernel_size=(1, 3, 3))
-        self.conv2_2 = conv3x3x3(planes, planes, kernel_size=(3, 1, 1))
-        self.bn2 = nn.BatchNorm3d(planes)
-        self.downsample = downsample
-        self.stride = stride
+        super(C21D_BasicBlock, self).__init__()
+        # self.conv1 = conv3x3x3(inplanes, planes, (1, stride, stride), kernel_size=(1, 3, 3))
+        # self.conv1_2 = conv3x3x3(planes, planes, (stride, 1, 1), kernel_size=(3, 1, 1))
+        # self.bn1 = nn.BatchNorm3d(planes)
+        # self.relu = nn.ReLU(inplace=True)
+        # self.conv2 = conv3x3x3(planes, planes, kernel_size=(1, 3, 3))
+        # self.conv2_2 = conv3x3x3(planes, planes, kernel_size=(3, 1, 1))
+        # self.bn2 = nn.BatchNorm3d(planes)
+        # self.downsample = downsample
+        # self.stride = stride
+
+        self.net = nn.Sequential(
+            conv3x3x3(inplanes, planes, (1, stride, stride), kernel_size=(1, 3, 3)),
+            nn.BatchNorm3d(planes),
+            nn.ReLU(inplace=True),
+            conv3x3x3(planes, planes, (stride, 1, 1), kernel_size=(3, 1, 1)),
+            nn.BatchNorm3d(planes),
+            nn.ReLU(inplace=True),
+            conv3x3x3(planes, planes, kernel_size=(1, 3, 3)),
+            nn.BatchNorm3d(planes),
+            nn.ReLU(inplace=True),
+            conv3x3x3(planes, planes, kernel_size=(3, 1, 1)),
+            nn.BatchNorm3d(planes),
+        )
 
     def forward(self, x):
         residual = x
 
-        out = self.conv1(x)
-        out = self.relu(out)
-        out = self.conv1_2(out)
-        out = self.bn1(out)
-        out = self.relu(out)
+        # out = self.conv1(x)
+        # out = self.relu(out)
+        # out = self.conv1_2(out)
+        # out = self.bn1(out)
+        # out = self.relu(out)
 
-        out = self.conv2(out)
-        out = self.relu(out)
-        out = self.conv2_2(out)
-        out = self.bn2(out)
+        # out = self.conv2(out)
+        # out = self.relu(out)
+        # out = self.conv2_2(out)
+        # out = self.bn2(out)
+        out = self.net(x)
 
         if self.downsample is not None:
             residual = self.downsample(x)
