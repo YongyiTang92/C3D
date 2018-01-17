@@ -49,11 +49,11 @@ class C21D_BasicBlock(nn.Module):
         # self.conv1 = conv3x3x3(inplanes, planes, (1, stride, stride), kernel_size=(1, 3, 3))
         # self.conv1_2 = conv3x3x3(planes, planes, (stride, 1, 1), kernel_size=(3, 1, 1))
         # self.bn1 = nn.BatchNorm3d(planes)
-        # self.relu = nn.ReLU(inplace=True)
+        self.relu = nn.ReLU(inplace=True)
         # self.conv2 = conv3x3x3(planes, planes, kernel_size=(1, 3, 3))
         # self.conv2_2 = conv3x3x3(planes, planes, kernel_size=(3, 1, 1))
         # self.bn2 = nn.BatchNorm3d(planes)
-        # self.downsample = downsample
+        self.downsample = downsample
         # self.stride = stride
 
         self.net = nn.Sequential(

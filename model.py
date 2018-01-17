@@ -9,11 +9,13 @@ class C3D_basic(object):
     def __init__(self, FLAGS, data_type='rgb'):
         self.FLAGS = FLAGS
         if FLAGS.model == 'R3D_34':
-            self.model = R3D_34()
+            net = R3D_34()
         elif FLAGS.model == 'R21D_34':
-            self.model = R21D_34()
+            net = R21D_34()
         else:
             raise('Error model type: ', FLAGS.model)
+
+        self.model = torch.nn.DataParallel(net, device_ids=[0, 1])
 
         self.data_type = data_type
         self.max_gradient_norm = FLAGS.max_gradient_norm
