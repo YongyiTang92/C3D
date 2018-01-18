@@ -12,14 +12,18 @@ def conv3x3x3(in_planes, out_planes, stride=1, padding=1, kernel_size=3):
 class C3D_BasicBlock(nn.Module):
     expansion = 1
 
-    def __init__(self, inplanes, planes, stride=1, downsample=None):
+    def __init__(self, inplanes, planes, stride=1, downsample_params=None):
         super(C3D_BasicBlock, self).__init__()
         self.conv1 = conv3x3x3(inplanes, planes, stride)
         self.bn1 = nn.BatchNorm3d(planes)
         self.relu = nn.ReLU(inplace=True)
         self.conv2 = conv3x3x3(planes, planes)
         self.bn2 = nn.BatchNorm3d(planes)
-        self.downsample = downsample
+        self.downsample = nn.Sequential(
+            nn.Conv3d(downsample_params[0], downsample_params[1],
+                      kernel_size=1, stride=downsample_params[2], bias=False),
+            nn.BatchNorm3d(downsample_params[1]),
+        )
         self.stride = stride
 
     def forward(self, x):
@@ -44,23 +48,24 @@ class C3D_BasicBlock(nn.Module):
 class C21D_BasicBlock(nn.Module):
     expansion = 1
 
-    def __init__(self, inplanes, planes, stride=1, downsample=None):
+    def __init__(self, inplanes, planes, stride=1, downsample_params=None):
         super(C21D_BasicBlock, self).__init__()
-        # self.conv1 = conv3x3x3(inplanes, planes, (1, stride, stride), kernel_size=(1, 3, 3))
-        # self.conv1_2 = conv3x3x3(planes, planes, (stride, 1, 1), kernel_size=(3, 1, 1))
-        # self.bn1 = nn.BatchNorm3d(planes)
         self.relu = nn.ReLU(inplace=True)
-        # self.conv2 = conv3x3x3(planes, planes, kernel_size=(1, 3, 3))
-        # self.conv2_2 = conv3x3x3(planes, planes, kernel_size=(3, 1, 1))
-        # self.bn2 = nn.BatchNorm3d(planes)
-        self.downsample = downsample
-        # self.stride = stride
+        self.downsample = nn.Sequential(
+            conv3x3x3(downsample_params[0], downsample_params[0],
+                      kernel_size=1, stride=(1, downsample_params[2], downsample_params[2])),
+            nn.BatchNorm3d(downsample_params[0]),
+            nn.ReLU(inplace=True),
+            conv3x3x3(downsample_params[0], downsample_params[1],
+                      kernel_size=1, stride=(downsample_params[2], 1, 1)),
+            nn.BatchNorm3d(downsample_params[1]),
+        )
 
         self.net = nn.Sequential(
-            conv3x3x3(inplanes, planes, (1, stride, stride), kernel_size=(1, 3, 3)),
+            conv3x3x3(inplanes, inplanes, (1, stride, stride), kernel_size=(1, 3, 3)),
             nn.BatchNorm3d(planes),
             nn.ReLU(inplace=True),
-            conv3x3x3(planes, planes, (stride, 1, 1), kernel_size=(3, 1, 1)),
+            conv3x3x3(inplanes, planes, (stride, 1, 1), kernel_size=(3, 1, 1)),
             nn.BatchNorm3d(planes),
             nn.ReLU(inplace=True),
             conv3x3x3(planes, planes, kernel_size=(1, 3, 3)),
@@ -72,17 +77,6 @@ class C21D_BasicBlock(nn.Module):
 
     def forward(self, x):
         residual = x
-
-        # out = self.conv1(x)
-        # out = self.relu(out)
-        # out = self.conv1_2(out)
-        # out = self.bn1(out)
-        # out = self.relu(out)
-
-        # out = self.conv2(out)
-        # out = self.relu(out)
-        # out = self.conv2_2(out)
-        # out = self.bn2(out)
         out = self.net(x)
 
         if self.downsample is not None:
@@ -124,12 +118,7 @@ class ResNet_3D(nn.Module):
     def _make_layer(self, block, planes, blocks, stride=1):
         downsample = None
         if stride != 1 or self.inplanes != planes * block.expansion:
-            downsample = nn.Sequential(
-                nn.Conv3d(self.inplanes, planes * block.expansion,
-                          kernel_size=1, stride=stride, bias=False),
-                nn.BatchNorm3d(planes * block.expansion),
-            )
-
+            downsample = (self.inplanes, planes * block.expansion, stride)
         layers = []
         layers.append(block(self.inplanes, planes, stride, downsample))
         self.inplanes = planes * block.expansion
